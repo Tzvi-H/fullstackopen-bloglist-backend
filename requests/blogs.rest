@@ -11,3 +11,12 @@ Content-Type: application/json
   "url": "www.idonotexist.com",
   "likes": 1
 }
+
+###
+POST http://localhost:3001/api/blogs
+Content-Type: application/json
+
+{
+  "author": "first last",
+  "likes": 1
+}

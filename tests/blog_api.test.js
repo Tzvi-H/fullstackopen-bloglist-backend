@@ -44,7 +44,7 @@ test('a valid blog can be added', async () => {
     .send(newBlog)
     .expect(201)
     .expect('Content-Type', /application\/json; charset=utf-8/)
-  
+
   const blogsAtEnd = await helper.blogsInDb();
   expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1);
 
@@ -61,6 +61,38 @@ test('adding a blog without likes will default to 0 likes', async () => {
 
   const response = await api.post('/api/blogs').send(newBlog)
   expect(response.body.likes).toBe(0)
+})
+
+test('blog without a title is not added', async () => {
+  const newBlog = {
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+
+  const blogsAtEnd = await helper.blogsInDb()
+
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+})
+
+test('blog without a url is not added', async () => {
+  const newBlog = {
+    title: 'TDD harms architecture',
+    author: 'Robert C. Martin',
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+
+  const blogsAtEnd = await helper.blogsInDb()
+
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
 })
 
 afterAll(() => {
