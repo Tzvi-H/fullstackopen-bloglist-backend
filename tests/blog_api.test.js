@@ -31,6 +31,27 @@ test('blog contains id property', async () => {
   expect(response.body[0].id).toBeDefined()
 })
 
+test('a valid blog can be added', async () => {
+  const newBlog = {
+    title: 'First class tests',
+    author: 'Robert C. Martin',
+    url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
+    likes: 10,
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json; charset=utf-8/)
+  
+  const blogsAtEnd = await helper.blogsInDb();
+  expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1);
+
+  const titles = blogsAtEnd.map(b => b.title);
+  expect(titles).toContain('First class tests')
+})
+
 afterAll(() => {
   mongoose.connection.close()
 })
