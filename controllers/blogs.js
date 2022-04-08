@@ -11,14 +11,7 @@ blogsRouter.get('/', async (request, response) => {
 
 blogsRouter.post('/', userExtractor, async (request, response) => {
   const body = request.body
-
   const user = request.user
-  if (!user) {
-    return response.status(400).json({
-      error: 'token missing or invalid'
-    })
-  }
-
   const blog = new Blog(request.body)
   
   blog.user = user._id
@@ -32,16 +25,7 @@ blogsRouter.post('/', userExtractor, async (request, response) => {
 
 blogsRouter.delete('/:id', userExtractor, async (request, response) => {
   const user = request.user
-  if (!user) {
-    return response.status(400).json({
-      error: 'token missing or invalid'
-    })
-  }
-  
   const blog = await Blog.findById(request.params.id)
-  
-  console.log(user)
-  console.log(blog)
   
   if (blog.user.toString() !== user._id.toString()) {
     return response.status(400).json({ error: 'you don\'t have permission to remove this blog' })
