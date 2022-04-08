@@ -7,7 +7,10 @@ const helper = require('./test_helper')
 const User = require('../models/User')
 const Blog = require('../models/blog')
 
+let id;
+
 describe('when there is initially one user in db', () => {
+  let token;
   beforeEach(async () => {
     await User.deleteMany({})
 
@@ -15,6 +18,14 @@ describe('when there is initially one user in db', () => {
     const user = new User({ username: 'root', passwordHash })
 
     await user.save()
+    id = user._id.toString()
+  })
+
+  beforeAll(async () => {
+    const response = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'salainen' })
+    token = response.body.token
   })
 
   test('creation succeeds with a fresh username', async () => {
@@ -29,6 +40,7 @@ describe('when there is initially one user in db', () => {
     await api
       .post('/api/users')
       .send(newUser)
+      .set('Authorization', `Bearer ${token}`)
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
@@ -51,6 +63,7 @@ describe('when there is initially one user in db', () => {
     const result = await api
       .post('/api/users')
       .send(newUser)
+      .set('Authorization', `Bearer ${token}`)
       .expect(400)
       .expect('Content-Type', /application\/json/)
 
@@ -61,12 +74,22 @@ describe('when there is initially one user in db', () => {
   })
 })
 
-describe('when there is initially some notes saved', () => {
+describe('when there is initially some notes saved and a valid token is sent', () => {
+  let token;
+
+  beforeAll(async () => {
+    const response = await api
+      .post('/api/login')
+      .send({ username: 'root', password: 'salainen' })
+    token = response.body.token
+  })
+
   beforeEach(async () => {
     await Blog.deleteMany({})
 
     for (let blog of helper.initialBlogs) {
       let blogObject = new Blog(blog)
+      blogObject.user = id
       await blogObject.save()
     }
   })
@@ -99,6 +122,7 @@ describe('when there is initially some notes saved', () => {
     await api
       .post('/api/blogs')
       .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
       .expect(201)
       .expect('Content-Type', /application\/json; charset=utf-8/)
 
@@ -116,7 +140,10 @@ describe('when there is initially some notes saved', () => {
       url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
     }
 
-    const response = await api.post('/api/blogs').send(newBlog)
+    const response = await api
+      .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newBlog)
     expect(response.body.likes).toBe(0)
   })
 
@@ -128,6 +155,7 @@ describe('when there is initially some notes saved', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(400)
 
@@ -144,6 +172,7 @@ describe('when there is initially some notes saved', () => {
 
     await api
       .post('/api/blogs')
+      .set('Authorization', `Bearer ${token}`)
       .send(newBlog)
       .expect(400)
 
@@ -159,6 +188,7 @@ describe('when there is initially some notes saved', () => {
 
       await api
         .delete(`/api/blogs/${blogToDelete.id}`)
+        .set('Authorization', `Bearer ${token}`)
         .expect(204)
 
       const blogsAtEnd = await helper.blogsInDb()
@@ -180,6 +210,30 @@ describe('when there is initially some notes saved', () => {
 
     const response = await api.put(`/api/blogs/${blogToUpdate.id}`).send(updatedBlog)
     expect(response.body.likes).toBe(100)
+  })
+})
+
+describe('when no token a sent', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('sekret', 10)
+    const user = new User({ username: 'root', passwordHash })
+
+    await user.save()
+  })
+
+  test('adding a blog will fail with a 401 status code', async () => {
+    const newBlog = {
+      title: 'TDD harms architecture',
+      author: 'Robert C. Martin',
+      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(401)
   })
 })
 
