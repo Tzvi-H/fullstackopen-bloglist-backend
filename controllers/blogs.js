@@ -24,7 +24,6 @@ blogsRouter.delete('/:id', userExtractor, async (request, response) => {
   const user = request.user
   const blog = await Blog.findById(request.params.id)
 
-  console.log(user)
   if ((!user) || blog.user.toString() !== user._id.toString()) {
     return response.status(401).json({ error: 'you don\'t have permission to remove this blog' })
   }
