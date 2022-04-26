@@ -1,242 +1,239 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
-const supertest = require('supertest')
-const app = require('../app')
-const api = supertest(app)
-const helper = require('./test_helper')
-const User = require('../models/User')
-const Blog = require('../models/blog')
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const supertest = require("supertest");
+const app = require("../app");
+const api = supertest(app);
+const helper = require("./test_helper");
+const User = require("../models/User");
+const Blog = require("../models/blog");
 
 let id;
 
-describe('when there is initially one user in db', () => {
+describe("when there is initially one user in db", () => {
   let token;
   beforeEach(async () => {
-    await User.deleteMany({})
+    await User.deleteMany({});
 
-    const passwordHash = await bcrypt.hash('sekret', 10)
-    const user = new User({ username: 'root', passwordHash })
+    const passwordHash = await bcrypt.hash("sekret", 10);
+    const user = new User({ username: "root", passwordHash });
 
-    await user.save()
-    id = user._id.toString()
-  })
+    await user.save();
+    id = user._id.toString();
+  });
 
   beforeAll(async () => {
     const response = await api
-      .post('/api/login')
-      .send({ username: 'root', password: 'salainen' })
-    token = response.body.token
-  })
+      .post("/api/login")
+      .send({ username: "root", password: "salainen" });
+    token = response.body.token;
+  });
 
-  test('creation succeeds with a fresh username', async () => {
-    const usersAtStart = await helper.usersInDb()
+  test("creation succeeds with a fresh username", async () => {
+    const usersAtStart = await helper.usersInDb();
 
     const newUser = {
-      username: 'mluukkai',
-      name: 'Matti Luukkainen',
-      password: 'salainen',
-    }
+      username: "mluukkai",
+      name: "Matti Luukkainen",
+      password: "salainen",
+    };
 
     await api
-      .post('/api/users')
+      .post("/api/users")
       .send(newUser)
-      .set('Authorization', `Bearer ${token}`)
+      .set("Authorization", `Bearer ${token}`)
       .expect(201)
-      .expect('Content-Type', /application\/json/)
+      .expect("Content-Type", /application\/json/);
 
-    const usersAtEnd = await helper.usersInDb()
-    expect(usersAtEnd).toHaveLength(usersAtStart.length + 1)
+    const usersAtEnd = await helper.usersInDb();
+    expect(usersAtEnd).toHaveLength(usersAtStart.length + 1);
 
-    const usernames = usersAtEnd.map(u => u.username)
-    expect(usernames).toContain(newUser.username)
-  })
+    const usernames = usersAtEnd.map((u) => u.username);
+    expect(usernames).toContain(newUser.username);
+  });
 
-  test('creation fails with proper statuscode and message if username already taken', async () => {
-    const usersAtStart = await helper.usersInDb()
+  test("creation fails with proper statuscode and message if username already taken", async () => {
+    const usersAtStart = await helper.usersInDb();
 
     const newUser = {
-      username: 'root',
-      name: 'Superuser',
-      password: 'salainen',
-    }
+      username: "root",
+      name: "Superuser",
+      password: "salainen",
+    };
 
     const result = await api
-      .post('/api/users')
+      .post("/api/users")
       .send(newUser)
-      .set('Authorization', `Bearer ${token}`)
+      .set("Authorization", `Bearer ${token}`)
       .expect(400)
-      .expect('Content-Type', /application\/json/)
+      .expect("Content-Type", /application\/json/);
 
-    expect(result.body.error).toContain('username must be unique')
+    expect(result.body.error).toContain("username must be unique");
 
-    const usersAtEnd = await helper.usersInDb()
-    expect(usersAtEnd).toEqual(usersAtStart)
-  })
-})
+    const usersAtEnd = await helper.usersInDb();
+    expect(usersAtEnd).toEqual(usersAtStart);
+  });
+});
 
-describe('when there is initially some notes saved and a valid token is sent', () => {
+describe("when there is initially some notes saved and a valid token is sent", () => {
   let token;
 
   beforeAll(async () => {
     const response = await api
-      .post('/api/login')
-      .send({ username: 'root', password: 'salainen' })
-    token = response.body.token
-  })
+      .post("/api/login")
+      .send({ username: "root", password: "salainen" });
+    token = response.body.token;
+  });
 
   beforeEach(async () => {
-    await Blog.deleteMany({})
+    await Blog.deleteMany({});
 
     for (let blog of helper.initialBlogs) {
-      let blogObject = new Blog(blog)
-      blogObject.user = id
-      await blogObject.save()
+      let blogObject = new Blog(blog);
+      blogObject.user = id;
+      await blogObject.save();
     }
-  })
+  });
 
-  test('blogs returned as json', async () => {
+  test("blogs returned as json", async () => {
     await api
-      .get('/api/blogs')
+      .get("/api/blogs")
       .expect(200)
-      .expect('Content-Type', /application\/json; charset=utf-8/)
-  }, 100000)
+      .expect("Content-Type", /application\/json; charset=utf-8/);
+  }, 100000);
 
-  test('all blogs returned', async () => {
-    const response = await api.get('/api/blogs');
-    expect(response.body).toHaveLength(helper.initialBlogs.length)
-  })
+  test("all blogs returned", async () => {
+    const response = await api.get("/api/blogs");
+    expect(response.body).toHaveLength(helper.initialBlogs.length);
+  });
 
-  test('blog contains id property', async () => {
-    const response = await api.get('/api/blogs');
-    expect(response.body[0].id).toBeDefined()
-  })
+  test("blog contains id property", async () => {
+    const response = await api.get("/api/blogs");
+    expect(response.body[0].id).toBeDefined();
+  });
 
-  test('a valid blog can be added', async () => {
+  test("a valid blog can be added", async () => {
     const newBlog = {
-      title: 'First class tests',
-      author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll',
+      title: "First class tests",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2017/05/05/TestDefinitions.htmll",
       likes: 10,
-    }
+    };
 
     await api
-      .post('/api/blogs')
+      .post("/api/blogs")
       .send(newBlog)
-      .set('Authorization', `Bearer ${token}`)
+      .set("Authorization", `Bearer ${token}`)
       .expect(201)
-      .expect('Content-Type', /application\/json; charset=utf-8/)
+      .expect("Content-Type", /application\/json; charset=utf-8/);
 
     const blogsAtEnd = await helper.blogsInDb();
     expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length + 1);
 
-    const titles = blogsAtEnd.map(b => b.title);
-    expect(titles).toContain('First class tests')
-  })
+    const titles = blogsAtEnd.map((b) => b.title);
+    expect(titles).toContain("First class tests");
+  });
 
-  test('adding a blog without likes will default to 0 likes', async () => {
+  test("adding a blog without likes will default to 0 likes", async () => {
     const newBlog = {
-      title: 'TDD harms architecture',
-      author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
-    }
+      title: "TDD harms architecture",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html",
+    };
 
     const response = await api
-      .post('/api/blogs')
-      .set('Authorization', `Bearer ${token}`)
-      .send(newBlog)
-    expect(response.body.likes).toBe(0)
-  })
+      .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
+      .send(newBlog);
+    expect(response.body.likes).toBe(0);
+  });
 
-  test('blog without a title is not added', async () => {
+  test("blog without a title is not added", async () => {
     const newBlog = {
-      author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
-    }
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html",
+    };
 
     await api
-      .post('/api/blogs')
-      .set('Authorization', `Bearer ${token}`)
+      .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
       .send(newBlog)
-      .expect(400)
+      .expect(400);
 
-    const blogsAtEnd = await helper.blogsInDb()
+    const blogsAtEnd = await helper.blogsInDb();
 
-    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
-  })
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
+  });
 
-  test('blog without a url is not added', async () => {
+  test("blog without a url is not added", async () => {
     const newBlog = {
-      title: 'TDD harms architecture',
-      author: 'Robert C. Martin',
-    }
+      title: "TDD harms architecture",
+      author: "Robert C. Martin",
+    };
 
     await api
-      .post('/api/blogs')
-      .set('Authorization', `Bearer ${token}`)
+      .post("/api/blogs")
+      .set("Authorization", `Bearer ${token}`)
       .send(newBlog)
-      .expect(400)
+      .expect(400);
 
-    const blogsAtEnd = await helper.blogsInDb()
+    const blogsAtEnd = await helper.blogsInDb();
 
-    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
-  })
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length);
+  });
 
-  describe('deletion of a blog', () => {
-    test('succeeds with status code 204 if id is valid', async () => {
-      const blogsAtStart = await helper.blogsInDb()
-      const blogToDelete = blogsAtStart[0]
+  describe("deletion of a blog", () => {
+    test("succeeds with status code 204 if id is valid", async () => {
+      const blogsAtStart = await helper.blogsInDb();
+      const blogToDelete = blogsAtStart[0];
 
       await api
         .delete(`/api/blogs/${blogToDelete.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .expect(204)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(204);
 
-      const blogsAtEnd = await helper.blogsInDb()
+      const blogsAtEnd = await helper.blogsInDb();
 
-      expect(blogsAtEnd).toHaveLength(
-        helper.initialBlogs.length - 1
-      )
+      expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length - 1);
 
-      const titles = blogsAtEnd.map(b => b.title)
+      const titles = blogsAtEnd.map((b) => b.title);
 
-      expect(titles).not.toContain(blogToDelete.title)
-    })
-  })
+      expect(titles).not.toContain(blogToDelete.title);
+    });
+  });
 
-  test('updating the likes of an existing blog works', async () => {
-    const blogsAtStart = await helper.blogsInDb()
-    const blogToUpdate = blogsAtStart[0]
-    const updatedBlog = { likes: 100 }
+  test("updating the likes of an existing blog works", async () => {
+    const blogsAtStart = await helper.blogsInDb();
+    const blogToUpdate = blogsAtStart[0];
+    const updatedBlog = { likes: 100 };
 
-    const response = await api.put(`/api/blogs/${blogToUpdate.id}`).send(updatedBlog)
-    expect(response.body.likes).toBe(100)
-  })
-})
+    const response = await api
+      .put(`/api/blogs/${blogToUpdate.id}`)
+      .send(updatedBlog);
+    expect(response.body.likes).toBe(100);
+  });
+});
 
-describe('when no token a sent', () => {
+describe("when no token a sent", () => {
   beforeEach(async () => {
-    await User.deleteMany({})
+    await User.deleteMany({});
 
-    const passwordHash = await bcrypt.hash('sekret', 10)
-    const user = new User({ username: 'root', passwordHash })
+    const passwordHash = await bcrypt.hash("sekret", 10);
+    const user = new User({ username: "root", passwordHash });
 
-    await user.save()
-  })
+    await user.save();
+  });
 
-  test('adding a blog will fail with a 401 status code', async () => {
+  test("adding a blog will fail with a 401 status code", async () => {
     const newBlog = {
-      title: 'TDD harms architecture',
-      author: 'Robert C. Martin',
-      url: 'http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html'
-    }
+      title: "TDD harms architecture",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2017/03/03/TDD-Harms-Architecture.html",
+    };
 
-    await api
-      .post('/api/blogs')
-      .send(newBlog)
-      .expect(401)
-  })
-})
+    await api.post("/api/blogs").send(newBlog).expect(401);
+  });
+});
 
 afterAll(() => {
-  mongoose.connection.close()
-})
+  mongoose.connection.close();
+});
