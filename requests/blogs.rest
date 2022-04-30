@@ -1,5 +1,5 @@
 ###
-GET http://localhost:3001/api/blogs
+GET http://localhost:3003/api/blogs
 
 ###
 POST http://localhost:3001/api/blogs
@@ -23,4 +23,13 @@ Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1sd
   "author": "first last",
   "url": "www.idonotexist.com",
   "likes": 1
+}
+
+###
+POST http://localhost:3003/api/blogs/62570f7e8f8e5d59f4097722/comments
+Content-Type: application/json
+Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1sdXVra2FpIiwiaWQiOiI2MjRmMjRlNmVjNjIyMGY1YjhiYzRkZTMiLCJpYXQiOjE2NDk0MzY4MjR9.0f7qn1a_sETnIaIM5oFaintExxRbiwWMwsMtWzaKCAE
+
+{
+  "comment": "I am the second comment!"
 }
